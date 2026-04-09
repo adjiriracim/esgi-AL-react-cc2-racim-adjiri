@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 import type { Movie } from "../types/movie";
 import { MovieCard } from "../components/MovieCard";
@@ -29,18 +29,37 @@ import { SearchBar } from "../components/SearchBar";
 //    le composant MovieCard (penser à la prop key)
 //
 
+const API_URL = "/api/movies";
+
 export const CataloguePage = () => {
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("");
 
-  // TODO : écrire le useQuery ici
+  const { data, error, isLoading } = useQuery<Movie[]>({
+    queryKey: ["film-list"],
+    initialData: [],
+    queryFn: async () => {
+      const response = await fetch(API_URL + "?search=" + search + "&genre=" + genre);
+      if (!response.ok) throw new Error("Erreur HTTP");
+
+      return response.json();
+    },
+  });
+
+  if (isLoading) {
+    return <div>Chargement...</div>;
+  }
+
+  if (error) {
+    return <div>Erreur : {(error as Error).message}</div>;
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Catalogue</h1>
       <SearchBar onSearch={setSearch} onGenreChange={setGenre} />
 
-      {/* TODO : afficher loading, error, et la liste de films */}
+        {data.map((movie) => (<MovieCard key={movie.id} movie={movie} />))}
     </div>
   );
 };

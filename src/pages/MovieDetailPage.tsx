@@ -36,6 +36,48 @@ import type { Movie } from "../types/movie";
 //                 + (watched ? "bg-gray-500" : "bg-green-600")
 //
 
+const API_URL = "/api/movies";
+
 export const MovieDetailPage = () => {
-  return <div>TODO : compléter cette page</div>;
+  const { id } = useParams<{ id: string }>();
+
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<Movie>({
+    queryKey: ["movie"],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/${id}`);
+      if (!response.ok) throw new Error("Erreur HTTP");
+      return response.json();
+    },
+  });
+
+  const filmToggleWatched = useMutation({
+    mutationFn: async () => {
+      await fetch(API_URL + '/' + data?.id + "/toggle-watched", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          watched : !data?.watched
+        }),
+      });
+    },
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ["movie"] });
+    },
+  });
+
+  return (
+    <div>
+      <h1>Détail du film {data?.title}</h1>
+      <img src={data?.imageUrl} alt={data?.title} />
+      <p>{data?.director}</p>
+      <p>{data?.year}</p>
+      <p>{data?.genre}</p>
+      <p>{data?.description}</p>
+
+      <button onClick={() => filmToggleWatched.mutate()}>
+        {data?.watched ? "vu" : "non vu"}
+      </button>
+    </div>
+  );
 };
